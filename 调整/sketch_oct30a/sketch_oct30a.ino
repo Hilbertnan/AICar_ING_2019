@@ -17,9 +17,9 @@ int angle = 80;//定义转向角度存储器，初始正向
 
 /*电机定义部分*/
 int Motorpin = 10;//电机数字接口
-char motor_data;//电机接受数据
+int motor_data;//电机接受数据
 int pulsewidth;//定义脉宽变量
-int MTspeed = '4';//电机速度
+int MTspeed = 0;//电机速度
 int val1;
 int myangle1;
 
@@ -30,26 +30,7 @@ void setup() {
   pinMode(Motorpin, OUTPUT); //设定舵机接口为输出接口
   Serial.println("AI_car=o_seral_simple ready" ) ;
   
-  //电调初始化
-  //看电调说明书，设置油门行程时，一开始需要把遥控器打到最高点。i<=110大概是2杪多
-  for (int i = 0; i <= 110; i++)
-  {
-    servopulse(Motorpin, 150); //引用脉冲函数
-  }
-
-  //等电机发出B-B两声后（就是两秒后，大概就是这里了）把油门打到最低点
-  for (int i = 0; i <= 55; i++)
-  {
-    servopulse(Motorpin, 20); //引用脉冲函数
-  }
-
-  //后面提示后，就可以控制电机转动了
-  for (int i = 0; i <= 150; i++)
-  {
-    servopulse(Motorpin, 150); //引用脉冲函数
-  }
-
-  Serial.println("hello car" ) ;
+  motor_init();
   
   mySCoop.start();
   
@@ -61,6 +42,7 @@ void loop() {yield();  input_data();}
 defineTaskLoop(Servo_)//定义舵机线程
 {
   Servo_logic();//调用舵机逻辑
+  
 }
 
 
@@ -87,12 +69,12 @@ void input_data() {
      
       if(mark == 1)  //如果接收到数据则执行comdata分析操作，否则什么都不做。
       {
-      //显示刚才输入的字符串（可选语句）
-        Serial.println(comdata);
-          //显示刚才输入的字符串长度（可选语句）
-        Serial.print("LEN:");
-        Serial.println(comdata.length());
-     
+//      //显示刚才输入的字符串（可选语句）
+//        Serial.println(comdata);
+//          //显示刚才输入的字符串长度（可选语句）
+//        Serial.print("LEN:");
+//        Serial.println(comdata.length());
+//     
     /*******************下面是重点*******************/
     //以串口读取字符串长度循环，
         for(int i = 0; i < comdata.length() ; i++)
@@ -115,8 +97,14 @@ void input_data() {
      
         motor_data = numdata[1];
         servo_data = numdata[2];
+        Serial.print(data_ID[1]);
+        Serial.println(motor_data);
+         Serial.print(data_ID[2]);
+        Serial.println(servo_data);
         //输出之后必须将读到数据的mark置0，不置0下次循环就不能使用了。
         mark = 0;
+        for(int i = 0; i < 6; i++)
+        {numdata[i] = 0;}
       }
 }
 void motor_init(){
@@ -179,23 +167,22 @@ void _init() {
 /*--加减速控制--*/
 
 //下面是servopulse函数部分(此函数意思:也就是說每次都是0.5ms高電平 1.98ms低電平 然後再0.52ms低電平 17ms延時也是低電平)
-void servopulse(int Motorpin, int val1) //定义一个脉冲函数
+void servopulse(int Motorpin, int myangle1) //定义一个脉冲函数
 {
-  myangle1 = map(val1, 0, 180, 1476, 1800);
   digitalWrite(Motorpin, HIGH); //将舵机接口电平至高
   delayMicroseconds(myangle1);//延时脉宽值的微秒数
   digitalWrite(Motorpin, LOW); //将舵机接口电平至低
-  delay(20 - val1 / 1000);
 }
 
 
 void Motorspeed() {
-    Serial.print("moving servo to ");
-    Serial.println(val1, DEC);
+//    Serial.print("moving motor to ");
+//    Serial.println(motor_data, DEC);
+//    Serial.print("moving servo to ");
+//    Serial.println(servo_data, DEC);
     
-    for (int i = 0; i <= 50; i++) //给予舵机足够的时间让它转到指定角度
-    {
-      servopulse(Motorpin, val1); //引用脉冲函数
-    }
+//    for (int i = 0; i <= 50; i++) //给予舵机足够的时间让它转到指定角度
+//    {
+      servopulse(Motorpin, motor_data); //引用脉冲函数
+//    }
   }
-}
