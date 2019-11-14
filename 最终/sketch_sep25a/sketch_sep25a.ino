@@ -14,7 +14,7 @@ int angle = 45;//定义转向角度存储器，初始正向
 int Motorpin = 10;//电机数字接口
 char motor_data;//电机接受数据
 int pulsewidth;//定义脉宽变量
-int MTspeed = '4';//电机速度
+int MTspeed = '9';//电机速度
 int val1;
 int myangle1;
 

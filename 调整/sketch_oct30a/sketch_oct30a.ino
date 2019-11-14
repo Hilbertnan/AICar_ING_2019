@@ -2,9 +2,8 @@
 #include <Servo.h>
 
 String comdata = "";//接收raspberrypi数据
-int numdata[6] = {0};
 int mark = 0;
-char *data_ID[] = {"POWER","MOTOR","SERIAL","S1","S2","none"}; 
+char *data_ID[] = {"MOTOR","SERIAL","S1","S2","none","none"}; 
 
 /*舵机定义部分*/
 Servo RC_servo; //定义模型车舵机
@@ -19,7 +18,7 @@ int angle = 80;//定义转向角度存储器，初始正向
 int Motorpin = 10;//电机数字接口
 int motor_data;//电机接受数据
 int pulsewidth;//定义脉宽变量
-int MTspeed = 0;//电机速度
+int MTspeed;//电机速度
 int val1;
 int myangle1;
 
@@ -29,10 +28,10 @@ void setup() {
   RC_servo.attach(Servopin);
   pinMode(Motorpin, OUTPUT); //设定舵机接口为输出接口
   Serial.println("AI_car=o_seral_simple ready" ) ;
-  
-  motor_init();
+  //motor_init();
   
   mySCoop.start();
+  Serial.println("hello car" );
   
   }
   
@@ -41,6 +40,7 @@ void loop() {yield();  input_data();}
 //多线程快速定义
 defineTaskLoop(Servo_)//定义舵机线程
 {
+ 
   Servo_logic();//调用舵机逻辑
   
 }
@@ -48,13 +48,15 @@ defineTaskLoop(Servo_)//定义舵机线程
 
 defineTaskLoop(Motor_)//定义电机线程
 {
- Motorspeed();//调速模块调用
+
+  Motorspeed();//调速模块调用
 }
 
 /*串口通信模块*/
 void input_data() {
-   //j是分拆之后数字数组的位置记数
-      int j = 0;
+
+   int motor_data_temp = 0;
+   int servo_data_temp = 0;
      
       //不断循环检测串口缓存，一个个读入字符串，
       while (Serial.available() > 0)
@@ -70,41 +72,45 @@ void input_data() {
       if(mark == 1)  //如果接收到数据则执行comdata分析操作，否则什么都不做。
       {
 //      //显示刚才输入的字符串（可选语句）
-//        Serial.println(comdata);
+        Serial.println(comdata);
 //          //显示刚才输入的字符串长度（可选语句）
-//        Serial.print("LEN:");
-//        Serial.println(comdata.length());
+        Serial.print("LEN:");
+        Serial.println(comdata.length());
 //     
     /*******************下面是重点*******************/
     //以串口读取字符串长度循环，
-        for(int i = 0; i < comdata.length() ; i++)
+        for(int i = 0; i < 7 ; i++)
         {
         //逐个分析comdata[i]字符串的文字，如果碰到文字是分隔符（这里选择逗号分割）则将结果数组位置下移一位
         //即比如11,22,33,55开始的11记到numdata[0];碰到逗号就j等于1了，
         //再转换就转换到numdata[1];再碰到逗号就记到numdata[2];以此类推，直到字符串结束
-          if(comdata[i] == ',')
+          if(i < 4)
           {
-            j++;
+            
+            motor_data_temp = motor_data_temp * 10 + (comdata[i] - '0');
           }
           else
           {
-            numdata[j] = numdata[j] * 10 + (comdata[i] - '0');
+            
+            servo_data_temp = servo_data_temp * 10 + (comdata[i] - '0');
           }
         }
         //comdata的字符串已经全部转换到numdata了，清空comdata以便下一次使用，
         //如果不请空的话，本次结果极有可能干扰下一次。
         comdata = String("");
      
-        motor_data = numdata[1];
-        servo_data = numdata[2];
-        Serial.print(data_ID[1]);
+        motor_data = motor_data_temp;
+        servo_data = servo_data_temp;
+        Serial.print(data_ID[0]);
         Serial.println(motor_data);
-         Serial.print(data_ID[2]);
+         Serial.print(data_ID[1]);
         Serial.println(servo_data);
+
+        MTspeed = motor_data;
+        angle = servo_data;
         //输出之后必须将读到数据的mark置0，不置0下次循环就不能使用了。
         mark = 0;
-        for(int i = 0; i < 6; i++)
-        {numdata[i] = 0;}
+
       }
 }
 void motor_init(){
@@ -141,6 +147,7 @@ void Servo_logic(){
   else {if (servo_data < angle) {turnR();}
   }
  }
+
 }
 
 
@@ -167,22 +174,19 @@ void _init() {
 /*--加减速控制--*/
 
 //下面是servopulse函数部分(此函数意思:也就是說每次都是0.5ms高電平 1.98ms低電平 然後再0.52ms低電平 17ms延時也是低電平)
-void servopulse(int Motorpin, int myangle1) //定义一个脉冲函数
+void servopulse(int Motorpin, int MTspeed) //定义一个脉冲函数
 {
   digitalWrite(Motorpin, HIGH); //将舵机接口电平至高
-  delayMicroseconds(myangle1);//延时脉宽值的微秒数
+  delayMicroseconds(MTspeed);//延时脉宽值的微秒数
   digitalWrite(Motorpin, LOW); //将舵机接口电平至低
+  delay(20);
 }
 
 
 void Motorspeed() {
-//    Serial.print("moving motor to ");
-//    Serial.println(motor_data, DEC);
-//    Serial.print("moving servo to ");
-//    Serial.println(servo_data, DEC);
-    
-//    for (int i = 0; i <= 50; i++) //给予舵机足够的时间让它转到指定角度
-//    {
-      servopulse(Motorpin, motor_data); //引用脉冲函数
-//    }
+//  Serial.print("moving_to :");
+//  Serial.println(MTspeed);
+//    Serial.print("servo_to :");
+//  Serial.println(angle);
+  servopulse(Motorpin, MTspeed); //引用脉冲函数
   }

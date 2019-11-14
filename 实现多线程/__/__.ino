@@ -4,7 +4,7 @@ defineTask(Servo_);//定义舵机线程
 defineTask(Motor_);//定义电机线程
 
 Servo RC_servo; //定义模型车舵机
-String serial_data = "";//接收raspberrypi数据
+//String serial_data = "";//接收raspberrypi数据
 /*舵机定义部分*/
 int Servopin = 9;//舵机数字接口
 int servo_data = 80;//舵机接受数据
@@ -68,16 +68,19 @@ void Motor_::loop(){
   
 /*串口通信模块*/
 void input_data() {
-   while(Serial.available() > 0)  
-    {
-        serial_data += char(Serial.read());
-        delay(10);
-    }
-    if (serial_data.length() > 0)
-    {
-        Serial.println(serial_data);
-        serial_data = "";
-    }
+  if (Serial.available() > 0)
+  {
+
+    servo_data = Serial.read();
+  //  servo_data = serial_data;
+angle = servo_data;
+    Serial.print("接收到的角度为：");
+    Serial.print(servo_data);
+    delay(10);
+    Serial.flush();
+    Serial.print("\n接收完成！");
+    Serial.print("\n");
+  }
 }
 
 void Servo_logic(){
